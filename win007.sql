@@ -93,10 +93,6 @@ CREATE TABLE `match` (
   `redHost` int(5) DEFAULT NULL,
   `redGuest` int(5) DEFAULT NULL,
   `time` datetime DEFAULT NULL,
-  `yapanAll` varchar(20) DEFAULT NULL,
-  `yapanHalf` varchar(20) DEFAULT NULL,
-  `daxiaoAll` varchar(20) DEFAULT NULL,
-  `daxiaoHalf` varchar(20) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

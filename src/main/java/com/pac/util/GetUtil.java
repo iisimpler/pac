@@ -1,16 +1,103 @@
 package com.pac.util;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.pac.model.BetMap;
 import com.pac.model.Company;
 import com.pac.model.Country;
 import com.pac.model.League;
+import com.pac.model.Match;
 import com.pac.model.Team;
 
 public class GetUtil {
+	/**
+	 * 获取某一博彩公司对某一场比赛所开的赔率的对应关系
+	 */
+	public List<BetMap> getBetMaps(String str) {
+		
+		List<BetMap> betMaps = new ArrayList<BetMap>();
+		
+		// 某一比赛的ID
+		Matcher mm = Pattern.compile("ScheduleID=\\d+").matcher(str);
+		mm.find();
+		String matchId = mm.group(0).substring(11);
+		
+		// 开始获取给该比赛赔率的对应关系
+		Matcher mmm = Pattern.compile("game=Array.*").matcher(str);
+		mmm.find();
+		String gameInfo = mmm.group(0);
+			
+		Matcher m = Pattern.compile("\"[^\\\"]+\"").matcher(gameInfo);
+		while (m.find()) {
+			
+			String game = m.group(0);
+			BetMap betMap = new BetMap();
+			
+			betMap.setId(Integer.valueOf(getText(game, 1, "|", 2, "|")));
+			betMap.setMatchId(Integer.valueOf(matchId));
+			betMap.setCompanyId(Integer.valueOf(getText(game, 1, "\"", 1, "|")));
+			
+			betMaps.add(betMap);
+		}
+
+		return betMaps;
+	}
+	
+	/**
+	 * 获取比赛信息
+	 */
+	public List<Match> getMaths(String str) {
+		
+		List<Match> matchs = new ArrayList<Match>();
+		
+		String pattern = "jh.*";
+		Pattern r = Pattern.compile(pattern);
+		Matcher m = r.matcher(str);
+		
+		while (m.find()) {
+			String matchInfos = m.group(0);
+			
+			int round = Integer.valueOf(getText(matchInfos, 1, "_", 2, "\""));
+			
+			String pattern1 = "\\[[^\\[\\]\"]+]";
+			Pattern r1 = Pattern.compile(pattern1);
+			Matcher m1 = r1.matcher(matchInfos);
+			
+			
+			while (m1.find()) {
+				String matchinfo = m1.group(0);
+				
+				Match match = new Match();
+				match.setId(Integer.valueOf(getText(matchinfo, 1, "[", 1, ",")));
+				match.setTeamId(Integer.valueOf(getText(matchinfo, 1, ",", 2, ",")));
+				
+				try {
+					match.setTime(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(getText(matchinfo, 1, "'", 2, "'")+":00"));
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}
+				
+				match.setHostId(Integer.valueOf(getText(matchinfo, 4, ",", 5, ",")));
+				match.setGuestId(Integer.valueOf(getText(matchinfo, 5, ",", 6, ",")));
+				match.setScoreAll(getText(matchinfo, 3, "'", 4, "'"));
+				match.setScoreHalf(getText(matchinfo, 5, "'", 6, "'"));
+				match.setRankHost(getText(matchinfo, 7, "'", 8, "'"));
+				match.setRankGuest(getText(matchinfo, 9, "'", 10, "'"));
+				match.setRedHost(Integer.valueOf(getText(matchinfo, 18, ",", 19, ",")));
+				match.setRedGuest(Integer.valueOf(getText(matchinfo, 19, ",", 20, ",")));
+				match.setRound(round);
+				
+				matchs.add(match);
+			}
+		}
+
+		return matchs;
+	}
 	
 	/**
 	 * 获取博彩公司信息

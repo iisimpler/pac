@@ -90,7 +90,7 @@ public class JdbcUtil {
 				sql = new StringBuilder(" where ").append(sql.substring(4));
 			}
 
-			sql = new StringBuilder("select * from " + clazz.getSimpleName()).append(sql);
+			sql = new StringBuilder("select * from `" + clazz.getSimpleName().toLowerCase()+"`").append(sql);
 
 			// 获取连接
 			Connection conn = cpds.getConnection();
@@ -173,7 +173,7 @@ public class JdbcUtil {
 			List<T> lst = select(t, map);
 
 			if (lst.size() == 0) {// 如没有则执行插入操作
-				StringBuilder sql = new StringBuilder("insert into " + clazz.getSimpleName() + ff + "values (");
+				StringBuilder sql = new StringBuilder("insert into `" + clazz.getSimpleName().toLowerCase()+"`" + ff + "values (");
 
 				for (int i = 0; i < vv.size(); i++) {
 					sql.append("?,");
@@ -201,7 +201,7 @@ public class JdbcUtil {
 					sets.append(", " + t3 + " = ? ");
 				}
 
-				StringBuilder sql = new StringBuilder("update " + clazz.getSimpleName() + " set ").append(sets.substring(2) + " where id = ?");
+				StringBuilder sql = new StringBuilder("update `" + clazz.getSimpleName() + "` set ").append(sets.substring(2) + " where id = ?");
 
 				Connection conn = cpds.getConnection();
 				PreparedStatement pstmt = conn.prepareStatement(sql.toString());

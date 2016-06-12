@@ -13,6 +13,7 @@ import us.codecraft.webmagic.monitor.SpiderMonitor;
 import us.codecraft.webmagic.processor.PageProcessor;
 
 import com.google.gson.Gson;
+import com.pac.model.Company;
 import com.pac.model.League;
 import com.pac.model.Team;
 import com.pac.util.GetUtil;
@@ -20,7 +21,7 @@ import com.pac.util.JdbcUtil;
 
 public class TestPageProcessor implements PageProcessor {
 
-	private Site site = Site.me().setCharset("UTF-8").setRetryTimes(3).setSleepTime(1000);
+	private Site site = Site.me().setCharset("GBk").setRetryTimes(3).setSleepTime(1000);
 
 	private GetUtil getUtil = new GetUtil();
 
@@ -50,10 +51,9 @@ public class TestPageProcessor implements PageProcessor {
 			}
 		}
 
+		String info = page.getRawText();
 		if (page.getUrl().toString().contains("http://zq.win007.com/jsData/matchResult/")) {
-			String info = page.getRawText();
 			League leagues = getUtil.getLeagueInfo(info);
-
 			try {
 				JdbcUtil.update(leagues);
 			} catch (Exception e) {
@@ -61,16 +61,24 @@ public class TestPageProcessor implements PageProcessor {
 			}
 
 			List<Team> teams = leagues.getTeams();
-			
+
 			System.out.println(new Gson().toJson(teams));
 			// JdbcUtil.updateTeam(teams);
+		}
+		if (page.getUrl().toString().contains("http://op.win007.com/companies.js")) {
+
+			List<Company> companies = getUtil.getCompanies(info);
+			for (Company company : companies) {
+				JdbcUtil.update(company);
+			}
 		}
 
 	}
 
 	public static void main(String[] args) throws JMException {
 		// Spider spider = Spider.create(new TestPageProcessor()).addUrl("http://zq.win007.com").thread(10);
-		Spider spider = Spider.create(new TestPageProcessor()).addUrl("http://zq.win007.com/jsData/matchResult/2015-2016/s36.js").thread(1);
+		// Spider spider = Spider.create(new TestPageProcessor()).addUrl("http://zq.win007.com/jsData/matchResult/2015-2016/s36.js").thread(1);
+		Spider spider = Spider.create(new TestPageProcessor()).addUrl("http://op.win007.com/companies.js").thread(1);
 		SpiderMonitor.instance().register(spider);
 		spider.start();
 	}

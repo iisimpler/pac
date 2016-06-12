@@ -5,11 +5,39 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.pac.model.Company;
 import com.pac.model.Country;
 import com.pac.model.League;
 import com.pac.model.Team;
 
 public class GetUtil {
+	
+	/**
+	 * 获取博彩公司信息
+	 */
+	public List<Company> getCompanies(String str) {
+		
+		List<Company> companies = new ArrayList<Company>();
+		
+		String pattern = "\\[[^\\[\\]]+\\]";
+		Pattern r = Pattern.compile(pattern);
+		Matcher m = r.matcher(str);
+
+		while (m.find()) {
+			String companyInfo = m.group(0);
+			
+			Company company = new Company();
+			company.setId(Integer.valueOf(getText(companyInfo, 1, "[", 1, ",")));
+			company.setName(getText(companyInfo, 1, "'", 2, "'"));
+			
+			String type = getText(companyInfo, 2, ",", 1, "]");
+			company.setType(type.equals("1,0")?"主流公司":(type.equals("0,1")?"交易所":"非交易所"));
+			
+			companies.add(company);
+		}
+		return companies;
+	}
+	
 	/**
 	 * 分离某一联赛中所有球队的信息
 	 */

@@ -4,32 +4,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.Gson;
-import com.pac.model.OddsMap;
 import com.pac.model.Company;
 import com.pac.model.Country;
 import com.pac.model.League;
 import com.pac.model.Match;
+import com.pac.model.Odds;
+import com.pac.model.OddsMap;
 import com.pac.model.PageUrl;
 import com.pac.model.Team;
 
 public class ServiceUtil {
 
-	public static void main(String[] args) throws Exception {
-		Country country = new Country();
-		country.setId(108);
-		country.setName("英格兰111");
-		country.setNameTra("英格蘭222");
-
-		// List<Country> select = select(country);
-		// for (Country country2 : select) {
-		// System.out.println(country2.getNameTra());
-		// }
-
-		League league = new League();
-		Map<String, Object> map = new HashMap<String, Object>();
-		map.put("hasSub", "无");
-		System.out.println(new Gson().toJson(JdbcUtil.select(league, map)));
+	public static int updateOdds(Odds odds) {
+		return JdbcUtil.insert(odds);
 	}
 
 	public synchronized static int updateTeam(Team team) {

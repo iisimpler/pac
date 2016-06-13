@@ -1,25 +1,25 @@
 package com.pac.main;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import javax.management.JMException;
 
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.Spider;
+import us.codecraft.webmagic.monitor.SpiderMonitor;
 import us.codecraft.webmagic.processor.PageProcessor;
 
-import com.pac.model.BetMap;
+import com.pac.extend.MyDownloader;
 import com.pac.model.Country;
 import com.pac.model.League;
 import com.pac.model.Match;
+import com.pac.model.OddsMap;
 import com.pac.model.PageUrl;
 import com.pac.model.Team;
 import com.pac.util.GetUtil;
-import com.pac.util.JdbcUtil;
+import com.pac.util.ServiceUtil;
 
 public class AllPageProcessor implements PageProcessor {
 
@@ -39,24 +39,19 @@ public class AllPageProcessor implements PageProcessor {
 	public void process(Page page) {
 
 		String info = page.getRawText();
-
-		// 确定当前 page 页面没有被爬过
-		PageUrl pageUrl = new PageUrl();
-		Map<String, Object> map = new HashMap<String, Object>();
-		map.put("name", page.getUrl().toString());
-		if (JdbcUtil.select(pageUrl, map).size() != 0) {
-			return;
-		}
-
+		
 		// 确定当前页面有相应数据
-		if (info.contains("对不起！你查看的页面不存在")) {
-
-			JdbcUtil.update(new PageUrl(page.getUrl().toString(), "页面不存在"));
+		if (page.getStatusCode()!=200) {
+			ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(),page.getStatusCode()+""));
 			return;
-		} else {
-
-			JdbcUtil.update(new PageUrl(page.getUrl().toString(), "成功"));
 		}
+		
+		if (info.contains("对不起！你查看的页面不存在")) {
+			ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "页面不存在"));
+			return;
+		}
+		
+		
 		// 简体国家页面
 		if (page.getUrl().toString().equals("http://zq.win007.com/jsData/infoHeader.js")) {
 			countries = getUtil.getCountryInfos(info);
@@ -72,7 +67,7 @@ public class AllPageProcessor implements PageProcessor {
 				for (Country countryTra : countriesTra) {
 					if (country.getId() == countryTra.getId()) {
 						country.setNameTra(countryTra.getName());
-						JdbcUtil.update(country);
+						ServiceUtil.updateCountry(country);
 					}
 				}
 				List<League> leagues = country.getLeagues();
@@ -81,7 +76,7 @@ public class AllPageProcessor implements PageProcessor {
 					if (league.getId()==922) {//922是土乙女，数据不准确，排除
 						return;
 					}
-					JdbcUtil.update(league);
+					ServiceUtil.updateLeague(league);
 					// 无子联赛的联赛
 					if (league.getHasSub().equals("无") && league.getLeagueType().equals("联赛")) {
 						int id = league.getId();
@@ -99,15 +94,17 @@ public class AllPageProcessor implements PageProcessor {
 
 			// 更新联赛的信息
 			League league = getUtil.getLeagueInfo(info);
-			JdbcUtil.update(league);
+			ServiceUtil.updateLeague(league);
 			List<Team> teams = league.getTeams();
-			JdbcUtil.updateTeam(teams);
+			for (Team team : teams) {
+				ServiceUtil.updateTeam(team);
+			}
 			
 			// 获取联赛里的比赛
 			List<Match> matchs = getUtil.getMaths(info);
 			
 			for (Match match : matchs) {
-				JdbcUtil.update(match);
+				ServiceUtil.updateMatch(match);
 				page.addTargetRequest("http://1x2.nowscore.com/"+match.getId()+".js");
 			}
 		}
@@ -115,16 +112,19 @@ public class AllPageProcessor implements PageProcessor {
 		//获取某一比赛和赔率的对应关系
 		if (page.getUrl().toString().contains("http://1x2.nowscore.com/")) {
 			
-			List<BetMap> betMaps = getUtil.getBetMaps(info);
-			for (BetMap betMap : betMaps) {
-				JdbcUtil.update(betMap);
+			List<OddsMap> oddsMaps = getUtil.getOddsMaps(info);
+			for (OddsMap oddsMap : oddsMaps) {
+				ServiceUtil.updateOddsMap(oddsMap);
 			}
 		}
 	}
 
 	public static void startAll() throws JMException {
 		// 从简体中文国家页面抓起
-		Spider countrySpider = Spider.create(new AllPageProcessor()).addUrl("http://zq.win007.com/jsData/infoHeader.js").thread(10);
+		Spider countrySpider = Spider.create(new AllPageProcessor()).setDownloader(new MyDownloader()).addUrl("http://zq.win007.com/jsData/infoHeader.js").thread(10);
+		// 添加监控
+		SpiderMonitor.instance().register(countrySpider);
+		
 		countrySpider.start();
 	}
 

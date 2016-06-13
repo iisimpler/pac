@@ -18,7 +18,7 @@ public class Match {
 	
 	private String scoreAll;
 	
-	private Integer teamId;
+	private Integer leagueId;
 	
 	private Integer redHost;
 	
@@ -84,12 +84,12 @@ public class Match {
 		this.scoreAll = scoreAll;
 	}
 
-	public Integer getTeamId() {
-		return teamId;
+	public Integer getLeagueId() {
+		return leagueId;
 	}
 
-	public void setTeamId(Integer teamId) {
-		this.teamId = teamId;
+	public void setLeagueId(Integer leagueId) {
+		this.leagueId = leagueId;
 	}
 
 	public Integer getRedHost() {

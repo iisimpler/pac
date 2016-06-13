@@ -7,20 +7,67 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.pac.model.BetMap;
 import com.pac.model.Company;
 import com.pac.model.Country;
 import com.pac.model.League;
 import com.pac.model.Match;
+import com.pac.model.Odds;
+import com.pac.model.OddsMap;
 import com.pac.model.Team;
 
 public class GetUtil {
+	
+	/**
+	 * 获取赔率
+	 */
+	public List<Odds> getOddsList(String str) {
+		
+		List<Odds> oddsList = new ArrayList<Odds>();
+		
+		Matcher m = Pattern.compile("<tr[^\u4e3b]*?</tr>").matcher(str);
+		
+//		List<String> oddsTrs = new ArrayList<String>();
+		while (m.find()) {
+			String oddsTr = m.group(0);
+			Odds odds = new Odds();
+			
+			Float hostOdds = Float.valueOf(getText(oddsTr, 4, ">", 5, "<"));
+			Float drawOdds = Float.valueOf(getText(oddsTr, 10, ">", 11, "<"));
+			Float guestOdds = Float.valueOf(getText(oddsTr, 16, ">", 17, "<"));
+			
+			Float returnRate = hostOdds*drawOdds*guestOdds/(hostOdds*drawOdds+hostOdds*guestOdds+drawOdds*guestOdds);
+			
+			Float hostRate = returnRate/hostOdds;
+			Float drawRate = returnRate/drawOdds;
+			Float guestRate = returnRate/guestOdds;
+			
+			odds.setHostOdds(hostOdds);
+			odds.setDrawOdds(drawOdds);
+			odds.setGuestOdds(guestOdds);
+			odds.setHostRate(hostRate);
+			odds.setDrawRate(drawRate);
+			odds.setGuestRate(guestRate);
+			odds.setReturnRate(returnRate);
+			odds.setHostKelly(Float.valueOf(getText(oddsTr, 28, ">", 29, "<")));
+			odds.setDrawKelly(Float.valueOf(getText(oddsTr, 30, ">", 31, "<")));
+			odds.setGuestKelly(Float.valueOf(getText(oddsTr, 32, ">", 33, "<").trim()));
+			try {
+				odds.setTime(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse("1970-"+getText(oddsTr, 34, ">", 35, "<").replace("&nbsp; ", "")+":00"));
+			} catch (ParseException e) {
+				e.printStackTrace();
+			}
+			
+			oddsList.add(odds);
+		}
+		return oddsList;
+	}
+	
 	/**
 	 * 获取某一博彩公司对某一场比赛所开的赔率的对应关系
 	 */
-	public List<BetMap> getBetMaps(String str) {
+	public List<OddsMap> getOddsMaps(String str) {
 		
-		List<BetMap> betMaps = new ArrayList<BetMap>();
+		List<OddsMap> oddsMaps = new ArrayList<OddsMap>();
 		
 		// 某一比赛的ID
 		Matcher mm = Pattern.compile("ScheduleID=\\d+").matcher(str);
@@ -36,16 +83,16 @@ public class GetUtil {
 		while (m.find()) {
 			
 			String game = m.group(0);
-			BetMap betMap = new BetMap();
+			OddsMap oddsMap = new OddsMap();
 			
-			betMap.setId(Integer.valueOf(getText(game, 1, "|", 2, "|")));
-			betMap.setMatchId(Integer.valueOf(matchId));
-			betMap.setCompanyId(Integer.valueOf(getText(game, 1, "\"", 1, "|")));
+			oddsMap.setId(Integer.valueOf(getText(game, 1, "|", 2, "|")));
+			oddsMap.setMatchId(Integer.valueOf(matchId));
+			oddsMap.setCompanyId(Integer.valueOf(getText(game, 1, "\"", 1, "|")));
 			
-			betMaps.add(betMap);
+			oddsMaps.add(oddsMap);
 		}
 
-		return betMaps;
+		return oddsMaps;
 	}
 	
 	/**
@@ -74,7 +121,7 @@ public class GetUtil {
 				
 				Match match = new Match();
 				match.setId(Integer.valueOf(getText(matchinfo, 1, "[", 1, ",")));
-				match.setTeamId(Integer.valueOf(getText(matchinfo, 1, ",", 2, ",")));
+				match.setLeagueId(Integer.valueOf(getText(matchinfo, 1, ",", 2, ",")));
 				
 				try {
 					match.setTime(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(getText(matchinfo, 1, "'", 2, "'")+":00"));

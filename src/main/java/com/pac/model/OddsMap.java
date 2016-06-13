@@ -1,6 +1,6 @@
 package com.pac.model;
 
-public class BetMap {
+public class OddsMap {
 	
 	private Integer id;
 	

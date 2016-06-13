@@ -2,21 +2,19 @@ package com.pac.main;
 
 import java.util.List;
 
-import javax.management.JMException;
-
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.Spider;
 import us.codecraft.webmagic.processor.PageProcessor;
 
 import com.google.gson.Gson;
-import com.pac.model.BetMap;
+import com.pac.extend.MyDownloader;
+import com.pac.model.Odds;
 import com.pac.util.GetUtil;
-import com.pac.util.JdbcUtil;
 
 public class TestPageProcessor implements PageProcessor {
 
-	private Site site = Site.me().setCharset("UTF-8").setRetryTimes(3).setSleepTime(1000);
+	private Site site = Site.me().setCharset("GBK").setRetryTimes(3).setSleepTime(1000).setUserAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; rv:46.0) Gecko/20100101 Firefox/46.0");
 
 	private GetUtil getUtil = new GetUtil();
 
@@ -27,21 +25,16 @@ public class TestPageProcessor implements PageProcessor {
 
 	@Override
 	public void process(Page page) {
-
+		
 		String info = page.getRawText();
 		
-		System.out.println(page.getStatusCode());
-		
-		List<BetMap> betMaps = getUtil.getBetMaps(info);
-		System.out.println(new Gson().toJson(betMaps));
-		for (BetMap betMap : betMaps) {
-			JdbcUtil.update(betMap);
-		}
+		List<Odds> oddsList = getUtil.getOddsList(info);
+		System.out.println(new Gson().toJson(oddsList));
 
 	}
 
-	public static void main(String[] args) throws JMException {
-		Spider.create(new TestPageProcessor()).addUrl("http://1x2.nowscore.com/1130596.js").thread(1).run();
+	public static void main(String[] args) throws Exception {
+		Spider.create(new TestPageProcessor()).setDownloader(new MyDownloader()).addUrl("http://op.win007.com/OddsHistory.aspx?id=57208268").thread(1).run();
 	}
 
 }

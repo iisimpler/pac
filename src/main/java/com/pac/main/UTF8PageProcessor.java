@@ -7,11 +7,10 @@ import javax.management.JMException;
 
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
-import us.codecraft.webmagic.Spider;
-import us.codecraft.webmagic.monitor.SpiderMonitor;
 import us.codecraft.webmagic.processor.PageProcessor;
 
 import com.pac.extend.MyDownloader;
+import com.pac.extend.MySpider;
 import com.pac.model.Country;
 import com.pac.model.League;
 import com.pac.model.Match;
@@ -21,9 +20,9 @@ import com.pac.model.Team;
 import com.pac.util.GetUtil;
 import com.pac.util.ServiceUtil;
 
-public class AllPageProcessor implements PageProcessor {
+public class UTF8PageProcessor implements PageProcessor {
 
-	private Site site = Site.me().setCharset("UTF-8").setCycleRetryTimes(3).setRetryTimes(3).setSleepTime(100);
+	private Site site = Site.me().setCharset("UTF-8").setCycleRetryTimes(3).setRetryTimes(3).setSleepTime(1000);
 
 	private List<Country> countries = new ArrayList<Country>();
 	private List<Country> countriesTra = new ArrayList<Country>();
@@ -38,6 +37,8 @@ public class AllPageProcessor implements PageProcessor {
 	@Override
 	public void process(Page page) {
 
+		ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "OK"));
+		
 		String info = page.getRawText();
 		
 		// 确定当前页面有相应数据
@@ -57,6 +58,8 @@ public class AllPageProcessor implements PageProcessor {
 			countries = getUtil.getCountryInfos(info);
 			// 请求队列加入繁体国家页面链接
 			page.addTargetRequest("http://zq.win007.com/jsData/infoHeaderFn.js");
+			
+			ServiceUtil.updatePageUrl(new PageUrl("http://zq.win007.com/jsData/infoHeaderFn.js", "new"));
 		}
 		// 繁体国家页面
 		if (page.getUrl().toString().equals("http://zq.win007.com/jsData/infoHeaderFn.js")) {
@@ -70,7 +73,9 @@ public class AllPageProcessor implements PageProcessor {
 						ServiceUtil.updateCountry(country);
 					}
 				}
+				
 				List<League> leagues = country.getLeagues();
+				
 				for (League league : leagues) {
 					
 					if (league.getId()==922) {//922是土乙女，数据不准确，排除
@@ -83,6 +88,8 @@ public class AllPageProcessor implements PageProcessor {
 						String[] season = league.getSeason().split(",");
 						for (int i = 0; i < season.length; i++) {
 							page.addTargetRequest("http://zq.win007.com/jsData/matchResult/" + season[i] + "/s" + id + ".js");
+							
+							ServiceUtil.updatePageUrl(new PageUrl("http://zq.win007.com/jsData/matchResult/" + season[i] + "/s" + id + ".js", "new"));
 						}
 					}
 				}
@@ -106,6 +113,7 @@ public class AllPageProcessor implements PageProcessor {
 			for (Match match : matchs) {
 				ServiceUtil.updateMatch(match);
 				page.addTargetRequest("http://1x2.nowscore.com/"+match.getId()+".js");
+				ServiceUtil.updatePageUrl(new PageUrl("http://zq.win007.com/jsData/infoHeaderFn.js", "new"));
 			}
 		}
 		
@@ -121,10 +129,8 @@ public class AllPageProcessor implements PageProcessor {
 
 	public static void startAll() throws JMException {
 		// 从简体中文国家页面抓起
-		Spider countrySpider = Spider.create(new AllPageProcessor()).setDownloader(new MyDownloader()).addUrl("http://zq.win007.com/jsData/infoHeader.js").thread(10);
-		// 添加监控
-		SpiderMonitor.instance().register(countrySpider);
-		
+		MySpider countrySpider = MySpider.create(new UTF8PageProcessor()).setDownloader(new MyDownloader()).addUrl("http://zq.win007.com/jsData/infoHeader.js").thread(10);
+		ServiceUtil.updatePageUrl(new PageUrl("http://zq.win007.com/jsData/infoHeader.js", "new"));
 		countrySpider.start();
 	}
 

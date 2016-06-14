@@ -108,7 +108,7 @@ public class MyDownloader extends AbstractDownloader {
         } catch (IOException e) {
             logger.warn("download page " + request.getUrl() + " error", e);
             // 将失败的url保存下来
-            ServiceUtil.updatePageUrl(new PageUrl(request.getUrl().toString(), "error"));
+            ServiceUtil.updatePageUrl(new PageUrl(request.getUrl().toString(), "error:"+e.getMessage()));
             if (site.getCycleRetryTimes() > 0) {
                 return addToCycleRetry(request, site);
             }

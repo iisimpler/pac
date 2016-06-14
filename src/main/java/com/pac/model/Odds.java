@@ -1,6 +1,5 @@
 package com.pac.model;
 
-import java.util.Date;
 
 public class Odds {
 
@@ -30,7 +29,7 @@ public class Odds {
 	
 	private Float guestKelly;
 	
-	private Date time;
+	private String time;
 
 	public Integer getId() {
 		return id;
@@ -136,12 +135,11 @@ public class Odds {
 		this.guestKelly = guestKelly;
 	}
 
-	public Date getTime() {
+	public String getTime() {
 		return time;
 	}
 
-	public void setTime(Date time) {
+	public void setTime(String time) {
 		this.time = time;
 	}
-	
 }

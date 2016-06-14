@@ -1,6 +1,5 @@
 package com.pac.model;
 
-import java.util.Date;
 
 public class Match {
 
@@ -24,7 +23,7 @@ public class Match {
 	
 	private Integer redGuest;
 	
-	private Date time;
+	private String time;
 	
 	private Integer round;
 
@@ -108,11 +107,11 @@ public class Match {
 		this.redGuest = redGuest;
 	}
 
-	public Date getTime() {
+	public String getTime() {
 		return time;
 	}
 
-	public void setTime(Date time) {
+	public void setTime(String time) {
 		this.time = time;
 	}
 

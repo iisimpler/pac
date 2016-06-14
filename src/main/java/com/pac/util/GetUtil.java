@@ -1,7 +1,5 @@
 package com.pac.util;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -51,11 +49,7 @@ public class GetUtil {
 			odds.setHostKelly(Float.valueOf(getText(oddsTr, 28, ">", 29, "<")));
 			odds.setDrawKelly(Float.valueOf(getText(oddsTr, 30, ">", 31, "<")));
 			odds.setGuestKelly(Float.valueOf(getText(oddsTr, 32, ">", 33, "<").trim()));
-			try {
-				odds.setTime(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse("1970-"+getText(oddsTr, 34, ">", 35, "<").replace("&nbsp; ", "")+":00"));
-			} catch (ParseException e) {
-				e.printStackTrace();
-			}
+			odds.setTime("0000-"+getText(oddsTr, 34, ">", 35, "<").replace("&nbsp; ", "")+":00");
 			
 			oddsList.add(odds);
 		}
@@ -122,12 +116,7 @@ public class GetUtil {
 				Match match = new Match();
 				match.setId(Integer.valueOf(getText(matchinfo, 1, "[", 1, ",")));
 				match.setLeagueId(Integer.valueOf(getText(matchinfo, 1, ",", 2, ",")));
-				
-				try {
-					match.setTime(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(getText(matchinfo, 1, "'", 2, "'")+":00"));
-				} catch (ParseException e) {
-					e.printStackTrace();
-				}
+				match.setTime(getText(matchinfo, 1, "'", 2, "'")+":00");
 				
 				match.setHostId(Integer.valueOf(getText(matchinfo, 4, ",", 5, ",")));
 				match.setGuestId(Integer.valueOf(getText(matchinfo, 5, ",", 6, ",")));

@@ -8,13 +8,19 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.pac.model.OddsMap;
 
 public class JdbcUtil {
+	
+	public static void main(String[] args) {
+		getOddsMapsWithPage(1,10);
+	}
 
 	private static ComboPooledDataSource cpds = new ComboPooledDataSource();
 
@@ -28,7 +34,7 @@ public class JdbcUtil {
 			cpds.setJdbcUrl(props.getProperty("url"));
 			cpds.setUser(props.getProperty("user"));
 			cpds.setPassword(props.getProperty("password"));
-			
+
 			cpds.setMaxPoolSize(Integer.valueOf(props.getProperty("maxPoolSize")));
 			cpds.setMinPoolSize(Integer.valueOf(props.getProperty("minPoolSize")));
 			cpds.setInitialPoolSize(Integer.valueOf(props.getProperty("initialPoolSize")));
@@ -37,6 +43,36 @@ public class JdbcUtil {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static List<OddsMap> getOddsMapsWithPage(int page, int pageSize) {
+		try {
+			List<OddsMap> oddsMaps = new ArrayList<OddsMap>();
+
+			String sql = "select * from oddsmap limit ?,?";
+
+			// 获取连接
+			Connection conn = cpds.getConnection();
+			PreparedStatement pstmt = conn.prepareStatement(sql.toString());
+			
+			pstmt.setInt(1, (page-1)*pageSize);
+			pstmt.setInt(2, pageSize);
+			
+			ResultSet rs = pstmt.executeQuery();
+			
+			while(rs.next()) {
+				OddsMap oddsMap = new OddsMap();
+				oddsMap.setId(rs.getInt("id"));
+				oddsMap.setMatchId(rs.getInt("matchId"));
+				oddsMap.setCompanyId(rs.getInt("companyId"));
+				oddsMaps.add(oddsMap);
+			}
+
+			return oddsMaps;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	public static <T> List<T> select(T t, Map<String, Object> where) {
@@ -114,6 +150,10 @@ public class JdbcUtil {
 			StringBuilder ff = new StringBuilder();
 			// 获取各个字段具体的值
 			List<Object> vv = new ArrayList<Object>();
+			// 获取各字段的类型
+			List<String> tt = new ArrayList<String>();
+			// 获取字段的 key-value 对
+			Map<String, Object> fv = new LinkedHashMap<String, Object>();
 
 			// 循环字段，获取字段信息并保存
 			for (Field field : fields) {
@@ -121,6 +161,8 @@ public class JdbcUtil {
 				if (field.get(t) != null && !field.getType().toString().endsWith("List")) {
 					ff.append("," + field.getName());
 					vv.add(field.get(t));
+					tt.add(field.getType().toString());
+					fv.put(field.getName(), field.get(t));
 				}
 			}
 			// 去掉多余逗号，加上括号
@@ -140,7 +182,7 @@ public class JdbcUtil {
 			for (int i = 0; i < vv.size(); i++) {
 				pstmt.setObject(i + 1, vv.get(i));
 			}
-			
+
 			int update = pstmt.executeUpdate();
 			conn.close();
 			return update;
@@ -198,7 +240,7 @@ public class JdbcUtil {
 			int update = pstmt.executeUpdate();
 			conn.close();
 			return update;
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

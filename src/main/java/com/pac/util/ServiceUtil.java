@@ -14,7 +14,7 @@ import com.pac.model.PageUrl;
 import com.pac.model.Team;
 
 public class ServiceUtil {
-
+	
 	public static int updateOdds(Odds odds) {
 		return JdbcUtil.insert(odds);
 	}
@@ -82,7 +82,7 @@ public class ServiceUtil {
 				return 0;
 			} else {
 				pageUrl.setId(selectPageurl.getId());
-				JdbcUtil.update(pageUrl);
+				return JdbcUtil.update(pageUrl);
 			}
 		}
 		return JdbcUtil.insert(pageUrl);

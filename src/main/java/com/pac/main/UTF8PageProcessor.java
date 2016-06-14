@@ -127,11 +127,13 @@ public class UTF8PageProcessor implements PageProcessor {
 		}
 	}
 
-	public static void startAll() throws JMException {
+	public void startAll() throws JMException {
 		// 从简体中文国家页面抓起
 		MySpider countrySpider = MySpider.create(new UTF8PageProcessor()).setDownloader(new MyDownloader()).addUrl("http://zq.win007.com/jsData/infoHeader.js").thread(10);
 		ServiceUtil.updatePageUrl(new PageUrl("http://zq.win007.com/jsData/infoHeader.js", "new"));
 		countrySpider.start();
+		
+		new OddsPageProcessor().startOdds();
 	}
 
 }

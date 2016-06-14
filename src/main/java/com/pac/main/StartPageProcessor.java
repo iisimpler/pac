@@ -46,7 +46,7 @@ public class StartPageProcessor implements PageProcessor {
 		
 		spider.run();
 
-		UTF8PageProcessor.startAll();
+//		new UTF8PageProcessor().startAll();
 	}
 
 }

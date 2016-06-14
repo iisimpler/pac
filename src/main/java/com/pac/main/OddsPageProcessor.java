@@ -6,6 +6,9 @@ import java.util.Map;
 
 import javax.management.JMException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.processor.PageProcessor;
@@ -22,6 +25,8 @@ import com.pac.util.JdbcUtil;
 import com.pac.util.ServiceUtil;
 
 public class OddsPageProcessor implements PageProcessor {
+	
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	private Site site = Site.me().setCharset("GBK").setRetryTimes(3).setSleepTime(100).setUserAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; rv:46.0) Gecko/20100101 Firefox/46.0");
 
@@ -106,6 +111,9 @@ public class OddsPageProcessor implements PageProcessor {
 		}
 
 		mySpider.start();
+		
+		Logger logger = LoggerFactory.getLogger(StartPageProcessor.class);
+		logger.info("==================================赔率抓取结束==================================");
 	}
 
 }

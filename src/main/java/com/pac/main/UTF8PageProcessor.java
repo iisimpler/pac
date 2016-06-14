@@ -5,6 +5,9 @@ import java.util.List;
 
 import javax.management.JMException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.processor.PageProcessor;
@@ -21,6 +24,8 @@ import com.pac.util.GetUtil;
 import com.pac.util.ServiceUtil;
 
 public class UTF8PageProcessor implements PageProcessor {
+	
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	private Site site = Site.me().setCharset("UTF-8").setCycleRetryTimes(3).setRetryTimes(3).setSleepTime(1000);
 
@@ -128,10 +133,14 @@ public class UTF8PageProcessor implements PageProcessor {
 	}
 
 	public void startAll() throws JMException {
+		Logger logger = LoggerFactory.getLogger(StartPageProcessor.class);
+
 		// 从简体中文国家页面抓起
 		MySpider countrySpider = MySpider.create(new UTF8PageProcessor()).setDownloader(new MyDownloader()).addUrl("http://zq.win007.com/jsData/infoHeader.js").thread(10);
 		ServiceUtil.updatePageUrl(new PageUrl("http://zq.win007.com/jsData/infoHeader.js", "new"));
 		countrySpider.start();
+		
+		logger.info("==================================赔率抓取开始==================================");
 		
 		new OddsPageProcessor().startOdds();
 	}

@@ -26,8 +26,6 @@ import com.pac.util.ServiceUtil;
 
 public class OddsPageProcessor implements PageProcessor {
 	
-	private Logger logger = LoggerFactory.getLogger(getClass());
-
 	private Site site = Site.me().setCharset("GBK").setRetryTimes(3).setSleepTime(100).setUserAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; rv:46.0) Gecko/20100101 Firefox/46.0");
 
 	private GetUtil getUtil = new GetUtil();

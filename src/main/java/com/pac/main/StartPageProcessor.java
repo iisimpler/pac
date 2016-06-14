@@ -20,7 +20,7 @@ import com.pac.util.ServiceUtil;
 
 public class StartPageProcessor implements PageProcessor {
 	
-	private Site site = Site.me().setCharset("GBK").setRetryTimes(3).setSleepTime(1000);
+	private Site site = Site.me().setCharset("GBK").setRetryTimes(3).setSleepTime(100);
 
 	private GetUtil getUtil = new GetUtil();
 

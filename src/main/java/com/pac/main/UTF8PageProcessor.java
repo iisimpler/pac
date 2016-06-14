@@ -27,7 +27,7 @@ public class UTF8PageProcessor implements PageProcessor {
 	
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
-	private Site site = Site.me().setCharset("UTF-8").setCycleRetryTimes(3).setRetryTimes(3).setSleepTime(1000);
+	private Site site = Site.me().setCharset("UTF-8").setCycleRetryTimes(3).setRetryTimes(3).setSleepTime(100);
 
 	private List<Country> countries = new ArrayList<Country>();
 	private List<Country> countriesTra = new ArrayList<Country>();

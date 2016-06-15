@@ -1,5 +1,6 @@
 package com.pac.main;
 
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,6 @@ import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.processor.PageProcessor;
 
-import com.google.gson.Gson;
 import com.pac.extend.MyDownloader;
 import com.pac.extend.MySpider;
 import com.pac.model.Match;
@@ -25,18 +25,23 @@ import com.pac.util.JdbcUtil;
 import com.pac.util.ServiceUtil;
 
 public class OddsPageProcessor implements PageProcessor {
-	
-	private Site site = Site.me().setCharset("GBK").setRetryTimes(3).setSleepTime(100).setUserAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; rv:46.0) Gecko/20100101 Firefox/46.0");
+
+	private Site site = Site.me().setCharset("GBK").setRetryTimes(5).setSleepTime(500).setUserAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; rv:46.0) Gecko/20100101 Firefox/46.0");
 
 	private GetUtil getUtil = new GetUtil();
+
+	private static Logger logger = LoggerFactory.getLogger(StartPageProcessor.class);
 
 	private static List<OddsMap> oddsMapsWithPage;
 
 	private int pageIndex = 1;
 
-	private int pageSize = 2;
+	private int pageSize = 100;
 
 	private int flag = pageSize;
+	
+	private long period = Clock.systemUTC().millis();//计时用
+	
 
 	@Override
 	public Site getSite() {
@@ -45,12 +50,39 @@ public class OddsPageProcessor implements PageProcessor {
 
 	@Override
 	public void process(Page page) {
-
 		flag--;
 		
-		ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "OK"));
-
+		long periodTemp = Clock.systemUTC().millis();
+		System.out.println(periodTemp-period);
+		if (periodTemp-period<1000) {
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		String info = page.getRawText();
+
+		if (info.contains("访问频率超出限制。")) {
+			ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "频率限制，未抓取"));
+			page.addTargetRequest(page.getUrl().toString());
+			try {
+				
+				if (periodTemp-period<60*1000) {
+					OddsPageProcessor.logger.error("访问频率超出限制。将线程休眠60s-" + page.getUrl().toString());
+					Thread.sleep(10*60*1000);
+				} else if (periodTemp-period<3*60*1000) {
+					OddsPageProcessor.logger.error("访问频率超出限制。将线程休眠3min-" + page.getUrl().toString());
+					Thread.sleep(5*60*1000);
+				}
+				
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			return;
+		}
+		ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "OK"));
 
 		List<Odds> oddsList = getUtil.getOddsList(info);
 
@@ -84,9 +116,9 @@ public class OddsPageProcessor implements PageProcessor {
 			}
 
 			ServiceUtil.updateOdds(odds);
+			period = Clock.systemUTC().millis();
+			
 		}
-
-		System.out.println(new Gson().toJson(oddsList));
 
 		if (flag == 0) {
 			flag = pageSize;
@@ -99,19 +131,18 @@ public class OddsPageProcessor implements PageProcessor {
 		}
 	}
 
-	public void startOdds() throws JMException {
-		MySpider mySpider = MySpider.create(new OddsPageProcessor()).setDownloader(new MyDownloader()).thread(10);
+	// public void startOdds() throws JMException {
+	public static void main(String[] args) throws JMException {
 
-		oddsMapsWithPage = JdbcUtil.getOddsMapsWithPage(pageIndex, pageSize);
+		MySpider mySpider = MySpider.create(new OddsPageProcessor()).setDownloader(new MyDownloader()).thread(3);
+
+		oddsMapsWithPage = JdbcUtil.getOddsMapsWithPage(1, 100);
 		for (OddsMap oddsMap : oddsMapsWithPage) {
 			mySpider.addUrl("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId());
 			ServiceUtil.updatePageUrl(new PageUrl("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId(), "new"));
 		}
 
 		mySpider.start();
-		
-		Logger logger = LoggerFactory.getLogger(StartPageProcessor.class);
-		logger.info("==================================赔率抓取结束==================================");
 	}
 
 }

@@ -41,8 +41,6 @@ public class UTF8PageProcessor implements PageProcessor {
 
 	@Override
 	public void process(Page page) {
-
-		ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "OK"));
 		
 		String info = page.getRawText();
 		
@@ -56,6 +54,8 @@ public class UTF8PageProcessor implements PageProcessor {
 			ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "页面不存在"));
 			return;
 		}
+		
+		ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "OK"));
 		
 		
 		// 简体国家页面
@@ -92,6 +92,9 @@ public class UTF8PageProcessor implements PageProcessor {
 						int id = league.getId();
 						String[] season = league.getSeason().split(",");
 						for (int i = 0; i < season.length; i++) {
+							if (!season[i].equals("2015-2016")) {
+								return;
+							}
 							page.addTargetRequest("http://zq.win007.com/jsData/matchResult/" + season[i] + "/s" + id + ".js");
 							
 							ServiceUtil.updatePageUrl(new PageUrl("http://zq.win007.com/jsData/matchResult/" + season[i] + "/s" + id + ".js", "new"));
@@ -140,9 +143,8 @@ public class UTF8PageProcessor implements PageProcessor {
 		ServiceUtil.updatePageUrl(new PageUrl("http://zq.win007.com/jsData/infoHeader.js", "new"));
 		countrySpider.start();
 		
+
 		logger.info("==================================赔率抓取开始==================================");
-		
-		new OddsPageProcessor().startOdds();
 	}
 
 }

@@ -1,6 +1,5 @@
 package com.pac.main;
 
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +25,7 @@ import com.pac.util.ServiceUtil;
 
 public class OddsPageProcessor implements PageProcessor {
 
-	private Site site = Site.me().setCharset("GBK").setRetryTimes(5).setSleepTime(500).setUserAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; rv:46.0) Gecko/20100101 Firefox/46.0");
+	private Site site = Site.me().setCharset("GBK").setRetryTimes(3).setSleepTime(2000).setUserAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; rv:46.0) Gecko/20100101 Firefox/46.0");
 
 	private GetUtil getUtil = new GetUtil();
 
@@ -36,12 +35,9 @@ public class OddsPageProcessor implements PageProcessor {
 
 	private int pageIndex = 1;
 
-	private int pageSize = 100;
+	private int pageSize = 10;
 
 	private int flag = pageSize;
-	
-	private long period = Clock.systemUTC().millis();//计时用
-	
 
 	@Override
 	public Site getSite() {
@@ -51,40 +47,39 @@ public class OddsPageProcessor implements PageProcessor {
 	@Override
 	public void process(Page page) {
 		flag--;
-		
-		long periodTemp = Clock.systemUTC().millis();
-		System.out.println(periodTemp-period);
-		if (periodTemp-period<1000) {
-			try {
-				Thread.sleep(500);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+
+		if (flag == 0) {
+			flag = pageSize;
+			pageIndex++;
+			oddsMapsWithPage = JdbcUtil.getOddsMapsWithPage(pageIndex, pageSize);
+			for (OddsMap oddsMap : oddsMapsWithPage) {
+				page.addTargetRequest("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId());
+				ServiceUtil.updatePageUrl(new PageUrl("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId(), "new"));
 			}
 		}
-		
+
 		String info = page.getRawText();
 
 		if (info.contains("访问频率超出限制。")) {
 			ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "频率限制，未抓取"));
 			page.addTargetRequest(page.getUrl().toString());
+			OddsPageProcessor.logger.error("访问频率超出限制。将线程休眠1min-" + page.getUrl());
 			try {
-				
-				if (periodTemp-period<60*1000) {
-					OddsPageProcessor.logger.error("访问频率超出限制。将线程休眠60s-" + page.getUrl().toString());
-					Thread.sleep(10*60*1000);
-				} else if (periodTemp-period<3*60*1000) {
-					OddsPageProcessor.logger.error("访问频率超出限制。将线程休眠3min-" + page.getUrl().toString());
-					Thread.sleep(5*60*1000);
-				}
-				
+
+				Thread.sleep(1 * 60 * 1000);
+
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 			return;
 		}
-		ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "OK"));
-
 		List<Odds> oddsList = getUtil.getOddsList(info);
+		if (oddsList.size() == 0) {
+			ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "无赔率数据"));
+			OddsPageProcessor.logger.warn("无赔率数据。" + page.getUrl());
+			return;
+		}
+		ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "OK"));
 
 		Integer oddsMapId = Integer.valueOf(page.getUrl().toString().substring(41));
 
@@ -116,33 +111,22 @@ public class OddsPageProcessor implements PageProcessor {
 			}
 
 			ServiceUtil.updateOdds(odds);
-			period = Clock.systemUTC().millis();
-			
 		}
 
-		if (flag == 0) {
-			flag = pageSize;
-			pageIndex++;
-			oddsMapsWithPage = JdbcUtil.getOddsMapsWithPage(pageIndex, pageSize);
-			for (OddsMap oddsMap : oddsMapsWithPage) {
-				page.addTargetRequest("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId());
-				ServiceUtil.updatePageUrl(new PageUrl("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId(), "new"));
-			}
-		}
 	}
 
 	// public void startOdds() throws JMException {
 	public static void main(String[] args) throws JMException {
 
-		MySpider mySpider = MySpider.create(new OddsPageProcessor()).setDownloader(new MyDownloader()).thread(3);
+		MySpider mySpider = MySpider.create(new OddsPageProcessor()).setDownloader(new MyDownloader()).thread(1);
 
-		oddsMapsWithPage = JdbcUtil.getOddsMapsWithPage(1, 100);
+		oddsMapsWithPage = JdbcUtil.getOddsMapsWithPage(1, 10);
 		for (OddsMap oddsMap : oddsMapsWithPage) {
 			mySpider.addUrl("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId());
 			ServiceUtil.updatePageUrl(new PageUrl("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId(), "new"));
 		}
 
-		mySpider.start();
+		mySpider.run();
 	}
 
 }

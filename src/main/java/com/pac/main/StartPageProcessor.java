@@ -31,14 +31,12 @@ public class StartPageProcessor implements PageProcessor {
 
 	@Override
 	public void process(Page page) {
-		
-		ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "OK"));
-
 		String info = page.getRawText();
 
 		List<Company> companies = getUtil.getCompanies(info);
 		companies.forEach(t -> ServiceUtil.updateCompany(t));
 
+		ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "OK"));
 	}
 
 	public static void main(String[] args) throws JMException {

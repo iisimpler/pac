@@ -96,7 +96,7 @@ public class UTF8PageProcessor implements PageProcessor {
 						int id = league.getId();
 						String[] season = league.getSeason().split(",");
 						for (int i = 0; i < season.length; i++) {
-//							if (!season[i].equals("2015-2016")) {
+//							if (season[i].equals("2015-2016")||season[i].equals("2015")) {
 //								continue;
 //							}
 							page.addTargetRequest("http://zq.win007.com/jsData/matchResult/" + season[i] + "/s" + id + ".js");

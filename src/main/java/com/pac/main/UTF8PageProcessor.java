@@ -78,11 +78,15 @@ public class UTF8PageProcessor implements PageProcessor {
 						ServiceUtil.updateCountry(country);
 					}
 				}
-				
+//				if (country.getId()!=1) {
+//					return;
+//				}
 				List<League> leagues = country.getLeagues();
 				
 				for (League league : leagues) {
-					
+//					if (league.getId()!=36) {
+//						return;
+//					}
 					if (league.getId()==922) {//922是土乙女，数据不准确，排除
 						return;
 					}
@@ -92,9 +96,9 @@ public class UTF8PageProcessor implements PageProcessor {
 						int id = league.getId();
 						String[] season = league.getSeason().split(",");
 						for (int i = 0; i < season.length; i++) {
-							if (!season[i].equals("2015-2016")) {
-								return;
-							}
+//							if (!season[i].equals("2015-2016")) {
+//								continue;
+//							}
 							page.addTargetRequest("http://zq.win007.com/jsData/matchResult/" + season[i] + "/s" + id + ".js");
 							
 							ServiceUtil.updatePageUrl(new PageUrl("http://zq.win007.com/jsData/matchResult/" + season[i] + "/s" + id + ".js", "new"));
@@ -119,9 +123,12 @@ public class UTF8PageProcessor implements PageProcessor {
 			List<Match> matchs = getUtil.getMaths(info);
 			
 			for (Match match : matchs) {
+				if (match.getRound()!=1) {
+					return;
+				}
 				ServiceUtil.updateMatch(match);
 				page.addTargetRequest("http://1x2.nowscore.com/"+match.getId()+".js");
-				ServiceUtil.updatePageUrl(new PageUrl("http://zq.win007.com/jsData/infoHeaderFn.js", "new"));
+				ServiceUtil.updatePageUrl(new PageUrl("http://1x2.nowscore.com/"+match.getId()+".js", "new"));
 			}
 		}
 		

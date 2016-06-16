@@ -25,7 +25,8 @@ import com.pac.util.ServiceUtil;
 
 public class OddsPageProcessor implements PageProcessor {
 
-	private Site site = Site.me().setCharset("GBK").setRetryTimes(3).setSleepTime(2000).setUserAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; rv:46.0) Gecko/20100101 Firefox/46.0");
+//	private Site site = Site.me().setCharset("GBK").setRetryTimes(3).setSleepTime(3000).setUserAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; rv:46.0) Gecko/20100101 Firefox/46.0");
+	private Site site = Site.me().setCharset("GBK").setRetryTimes(3).setSleepTime(500).setUserAgent("Baiduspider");
 
 	private GetUtil getUtil = new GetUtil();
 
@@ -38,7 +39,7 @@ public class OddsPageProcessor implements PageProcessor {
 	private int pageSize = 10;
 
 	private int flag = pageSize;
-
+	
 	@Override
 	public Site getSite() {
 		return site;
@@ -46,87 +47,93 @@ public class OddsPageProcessor implements PageProcessor {
 
 	@Override
 	public void process(Page page) {
+		
 		flag--;
 
-		if (flag == 0) {
-			flag = pageSize;
-			pageIndex++;
-			oddsMapsWithPage = JdbcUtil.getOddsMapsWithPage(pageIndex, pageSize);
-			for (OddsMap oddsMap : oddsMapsWithPage) {
-				page.addTargetRequest("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId());
-				ServiceUtil.updatePageUrl(new PageUrl("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId(), "new"));
-			}
-		}
-
 		String info = page.getRawText();
+		String urlStr = page.getUrl().toString();
 
-		if (info.contains("访问频率超出限制。")) {
-			ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "频率限制，未抓取"));
-			page.addTargetRequest(page.getUrl().toString());
-			OddsPageProcessor.logger.error("访问频率超出限制。将线程休眠1min-" + page.getUrl());
-			try {
-
-				Thread.sleep(1 * 60 * 1000);
-
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+		try {
+			if (info.contains("访问频率超出限制。")) {
+				ServiceUtil.updatePageUrl(new PageUrl(urlStr, "频率限制，未抓取"));
+				OddsPageProcessor.logger.error("访问频率超出限制。将线程休眠10min-" + page.getUrl());
+				Thread.sleep(10 * 60 * 1000);
+				return;
 			}
-			return;
-		}
-		List<Odds> oddsList = getUtil.getOddsList(info);
-		if (oddsList.size() == 0) {
-			ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "无赔率数据"));
-			OddsPageProcessor.logger.warn("无赔率数据。" + page.getUrl());
-			return;
-		}
-		ServiceUtil.updatePageUrl(new PageUrl(page.getUrl().toString(), "OK"));
+			List<Odds> oddsList = getUtil.getOddsList(info);
+			if (oddsList.size() == 0) {
+				ServiceUtil.updatePageUrl(new PageUrl(urlStr, "无赔率数据"));
+				OddsPageProcessor.logger.warn("无赔率数据。" + page.getUrl());
+				return;
+			}
+			if (oddsList.size()<10) {
+				OddsPageProcessor.logger.error("赔率列表数据较少。将线程休眠1s-" + page.getUrl());
+				Thread.sleep(1000);
+			}
+			ServiceUtil.updatePageUrl(new PageUrl(urlStr, "OK"));
 
-		Integer oddsMapId = Integer.valueOf(page.getUrl().toString().substring(41));
+			Integer matchId = Integer.valueOf(GetUtil.getText(urlStr, 2, "=", 2, "&"));
+			Integer companyId = Integer.valueOf(GetUtil.getText(urlStr, 3, "=", 3, "&"));
+			Integer yearMatch = Integer.valueOf(GetUtil.getText(urlStr, 4, "=", 4, "&"));
+			Integer mouthMatch = Integer.valueOf(urlStr.substring(GetUtil.getIndex(urlStr, 5, "=")+1));
+			
+			
+			for (Odds odds : oddsList) {
+				Integer mouthOdds = Integer.valueOf(odds.getTime().substring(5, 6));
 
-		for (Odds odds : oddsList) {
-
-			for (OddsMap oddsMap : oddsMapsWithPage) {
-
-				if (oddsMapId.equals(oddsMap.getId())) {
-
-					Integer matchId = oddsMap.getMatchId();
-
-					Map<String, Object> map = new HashMap<String, Object>();
-					map.put("id", matchId);
-
-					String matchTime = JdbcUtil.select(new Match(), map).get(0).getTime();
-					Integer yearMatch = Integer.valueOf(matchTime.substring(0, 4));
-					Integer mouthMatch = Integer.valueOf(matchTime.substring(5, 6));
-
-					Integer mouthOdds = Integer.valueOf(odds.getTime().substring(5, 6));
-
-					if (mouthOdds > mouthMatch) {
-						odds.setTime(odds.getTime().replace("0000", yearMatch + ""));
-					} else {
-						odds.setTime(odds.getTime().replace("0000", yearMatch - 1 + ""));
-					}
-					odds.setCompanyId(oddsMap.getCompanyId());
-					odds.setMatchId(matchId);
+				if (mouthOdds > mouthMatch) {
+					odds.setTime(odds.getTime().replace("0000", yearMatch + ""));
+				} else {
+					odds.setTime(odds.getTime().replace("0000", yearMatch - 1 + ""));
 				}
+				odds.setCompanyId(companyId);
+				odds.setMatchId(matchId);
+				
+				ServiceUtil.updateOdds(odds);
+
 			}
 
-			ServiceUtil.updateOdds(odds);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			if (flag == 0) {
+				flag = pageSize;
+				pageIndex++;
+				getOddsMaps(null,page,pageIndex,pageSize);
+			}
 		}
-
 	}
 
 	// public void startOdds() throws JMException {
 	public static void main(String[] args) throws JMException {
 
-		MySpider mySpider = MySpider.create(new OddsPageProcessor()).setDownloader(new MyDownloader()).thread(1);
+		MySpider mySpider = MySpider.create(new OddsPageProcessor()).setDownloader(new MyDownloader()).thread(2);
 
-		oddsMapsWithPage = JdbcUtil.getOddsMapsWithPage(1, 10);
-		for (OddsMap oddsMap : oddsMapsWithPage) {
-			mySpider.addUrl("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId());
-			ServiceUtil.updatePageUrl(new PageUrl("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId(), "new"));
-		}
+		getOddsMaps(mySpider,null,1,10);
 
 		mySpider.run();
+	}
+
+	private static void getOddsMaps(MySpider mySpider,Page page,int pageIndex,int pageSize) {
+		oddsMapsWithPage = JdbcUtil.getOddsMapsWithPage(pageIndex, pageSize);
+		for (OddsMap oddsMap : oddsMapsWithPage) {
+			
+			Integer matchId = oddsMap.getMatchId();
+
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.put("id", matchId);
+			String matchTime = JdbcUtil.select(new Match(), map).get(0).getTime();
+			Integer yearMatch = Integer.valueOf(matchTime.substring(0, 4));
+			Integer mouthMatch = Integer.valueOf(matchTime.substring(5, 7));
+			
+			if (mySpider!=null&&page==null) {
+				mySpider.addUrl("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId()+"&matchId="+matchId+"&companyId="+oddsMap.getCompanyId()+"&yearMatch="+yearMatch+"&mouthMatch="+mouthMatch);
+			}
+			if (mySpider==null&&page!=null) {
+				page.addTargetRequest("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId()+"&matchId="+matchId+"&companyId="+oddsMap.getCompanyId()+"&yearMatch="+yearMatch+"&mouthMatch="+mouthMatch);
+			}
+			ServiceUtil.updatePageUrl(new PageUrl("http://op.win007.com/OddsHistory.aspx?id=" + oddsMap.getId()+"&matchId="+matchId+"&companyId="+oddsMap.getCompanyId()+"&yearMatch="+yearMatch+"&mouthMatch="+mouthMatch, "new"));
+		}
 	}
 
 }

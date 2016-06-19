@@ -20,7 +20,7 @@ import com.pac.util.GetUtil;
 import com.pac.util.JdbcUtil;
 import com.pac.util.ServiceUtil;
 
-public class TestPageProcessor implements PageProcessor {
+public class OddsMobilePageProcessor implements PageProcessor {
 
 	// private Site site = Site.me().setCharset("GBK").setRetryTimes(3).setSleepTime(3000).setUserAgent("Mozilla/5.0 (Windows NT 10.0; WOW64; rv:46.0) Gecko/20100101 Firefox/46.0");
 	private Site site = Site.me().setCharset("UTF-8").setRetryTimes(3).setSleepTime(10).setUserAgent("Baiduspider");
@@ -69,11 +69,11 @@ public class TestPageProcessor implements PageProcessor {
 	// public void startOdds() throws JMException {
 	public static void main(String[] args) throws JMException {
 
-		MySpider mySpider = MySpider.create(new TestPageProcessor()).setDownloader(new MyDownloader()).thread(50);
+		MySpider mySpider = MySpider.create(new OddsMobilePageProcessor()).setDownloader(new MyDownloader()).thread(50);
 
 		getOddsMaps(mySpider, null, 1, 10000);
 
-		mySpider.run();
+		mySpider.start();
 	}
 
 	private static void getOddsMaps(MySpider mySpider, Page page, int pageIndex, int pageSize) {

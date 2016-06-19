@@ -16,9 +16,9 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.pac.model.OddsMap;
 
 public class JdbcUtil {
-	
+
 	public static void main(String[] args) {
-		getOddsMapsWithPage(1,10);
+		getOddsMapsWithPage(1, 10);
 	}
 
 	private static ComboPooledDataSource cpds = new ComboPooledDataSource();
@@ -44,6 +44,34 @@ public class JdbcUtil {
 		}
 	}
 
+	//五大联赛 Eurobet 伟德 立博 威廉希尔 bet365 Oddset SB
+	public static List<OddsMap> getOddsMaps5League() {
+		try {
+
+			List<OddsMap> oddsMaps = new ArrayList<OddsMap>();
+
+			String sql = "SELECT * FROM `oddsmap` where matchId in (SELECT id FROM `match` where leagueId in (36,4,2,31,11)) and companyId in (71,81,82,115,281,370,545)";
+
+			// 获取连接
+			Connection conn = cpds.getConnection();
+			PreparedStatement pstmt = conn.prepareStatement(sql.toString());
+			ResultSet rs = pstmt.executeQuery();
+			while (rs.next()) {
+				OddsMap oddsMap = new OddsMap();
+				oddsMap.setId(rs.getInt("id"));
+				oddsMap.setMatchId(rs.getInt("matchId"));
+				oddsMap.setCompanyId(rs.getInt("companyId"));
+				oddsMaps.add(oddsMap);
+			}
+			return oddsMaps;
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
 	public static List<OddsMap> getOddsMapsWithPage(int page, int pageSize) {
 		try {
 			List<OddsMap> oddsMaps = new ArrayList<OddsMap>();
@@ -53,13 +81,13 @@ public class JdbcUtil {
 			// 获取连接
 			Connection conn = cpds.getConnection();
 			PreparedStatement pstmt = conn.prepareStatement(sql.toString());
-			
-			pstmt.setInt(1, (page-1)*pageSize);
+
+			pstmt.setInt(1, (page - 1) * pageSize);
 			pstmt.setInt(2, pageSize);
-			
+
 			ResultSet rs = pstmt.executeQuery();
-			
-			while(rs.next()) {
+
+			while (rs.next()) {
 				OddsMap oddsMap = new OddsMap();
 				oddsMap.setId(rs.getInt("id"));
 				oddsMap.setMatchId(rs.getInt("matchId"));

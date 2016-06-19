@@ -63,7 +63,7 @@ public class OddsPageProcessor implements PageProcessor {
 				Thread.sleep(10 * 60 * 1000);
 				return;
 			}
-			List<Odds> oddsList = getUtil.getOddsList(info);
+			List<Odds> oddsList = getUtil.getOddsListFromPc(info);
 
 			if (oddsList.size() < 20) {
 				OddsPageProcessor.logger.info("赔率列表数据较少。将线程休眠1s-" + page.getUrl());

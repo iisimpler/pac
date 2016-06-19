@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import us.codecraft.webmagic.Page;
+
 import com.pac.model.Company;
 import com.pac.model.Country;
 import com.pac.model.League;
@@ -14,31 +16,124 @@ import com.pac.model.OddsMap;
 import com.pac.model.Team;
 
 public class GetUtil {
-	
+
 	/**
-	 * 获取赔率
+	 * 从手机版网页获取赔率
 	 */
-	public List<Odds> getOddsList(String str) {
-		
+	public List<Odds> getOddsListFromMobile(Page page) {
 		List<Odds> oddsList = new ArrayList<Odds>();
-		
+		String str = page.getRawText();
+
+		String urlStr = page.getUrl().toString();
+		Integer matchId = Integer.valueOf(GetUtil.getText(urlStr, 1, "=", 1, "&"));
+		Integer companyId = Integer.valueOf(urlStr.substring(GetUtil.getIndex(urlStr, 2, "=") + 1));
+
+		Matcher yearInfoMatch = Pattern.compile("\"gray\">\\d+").matcher(str);
+		Matcher oddsInfosMatch = Pattern.compile("<table style=\"width:100%;\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" class=\"mytable3\">[\\w\\W]*?</table>").matcher(str);
+
+		Integer year = 0;
+		if (yearInfoMatch.find()) {
+			year = Integer.valueOf("20" + yearInfoMatch.group().substring(7));
+		}
+		if (oddsInfosMatch.find()) {
+			String oddsInfos = oddsInfosMatch.group();
+			Matcher oddsInfoMatch = Pattern.compile("<tr[\\w\\W]*?</tr>").matcher(oddsInfos);
+
+			oddsInfoMatch.find();
+
+			String date = "";
+			String time = "";
+
+			while (oddsInfoMatch.find()) {
+				String oddsInfo = oddsInfoMatch.group();
+				Matcher oddsMatch = Pattern.compile("<td[\\w\\W]*?</td>").matcher(oddsInfo);
+
+				Odds odds = new Odds();
+				Float hostOdds = null;
+				Float drawOdds = null;
+				Float guestOdds = null;
+				int temp = 0;
+				while (oddsMatch.find()) {
+					String rate = oddsMatch.group();
+					Matcher ratesMatch = Pattern.compile("\\d+\\.\\d+").matcher(rate);
+					Matcher dateMatch = Pattern.compile("\\d+\\-\\d+").matcher(rate);
+					Matcher timeMatch = Pattern.compile("\\d+\\:\\d+").matcher(rate);
+
+					if (ratesMatch.find()) {
+						temp++;
+						String rates = ratesMatch.group();
+
+						if (temp == 1) {
+							hostOdds = Float.valueOf(rates);
+						}
+						if (temp == 2) {
+							drawOdds = Float.valueOf(rates);
+						}
+						if (temp == 3) {
+							guestOdds = Float.valueOf(rates);
+						}
+						if (temp == 5) {
+							odds.setHostKelly(Float.valueOf(ratesMatch.group()));
+							ratesMatch.find();
+							odds.setDrawKelly(Float.valueOf(ratesMatch.group()));
+							ratesMatch.find();
+							odds.setGuestKelly(Float.valueOf(ratesMatch.group()));
+						}
+					}
+					if (dateMatch.find()) {
+						date = year + "-" + dateMatch.group();
+					}
+					if (timeMatch.find()) {
+						time = timeMatch.group() + ":00";
+					}
+				}
+				Float returnRate = hostOdds * drawOdds * guestOdds / (hostOdds * drawOdds + hostOdds * guestOdds + drawOdds * guestOdds);
+
+				Float hostRate = returnRate / hostOdds;
+				Float drawRate = returnRate / drawOdds;
+				Float guestRate = returnRate / guestOdds;
+
+				odds.setHostOdds(hostOdds);
+				odds.setDrawOdds(drawOdds);
+				odds.setGuestOdds(guestOdds);
+				odds.setHostRate(hostRate);
+				odds.setDrawRate(drawRate);
+				odds.setGuestRate(guestRate);
+				odds.setReturnRate(returnRate);
+				odds.setTime(date + " " + time);
+				odds.setMatchId(matchId);
+				odds.setCompanyId(companyId);
+
+				oddsList.add(odds);
+			}
+		}
+		return oddsList;
+	}
+
+	/**
+	 * 从PC版网页获取赔率，有访问频率限制
+	 */
+	public List<Odds> getOddsListFromPc(String str) {
+
+		List<Odds> oddsList = new ArrayList<Odds>();
+
 		Matcher m = Pattern.compile("<tr[^\u4e3b]*?</tr>").matcher(str);
-		
-//		List<String> oddsTrs = new ArrayList<String>();
+
+		// List<String> oddsTrs = new ArrayList<String>();
 		while (m.find()) {
 			String oddsTr = m.group(0);
 			Odds odds = new Odds();
-			
+
 			Float hostOdds = Float.valueOf(getText(oddsTr, 4, ">", 5, "<"));
 			Float drawOdds = Float.valueOf(getText(oddsTr, 10, ">", 11, "<"));
 			Float guestOdds = Float.valueOf(getText(oddsTr, 16, ">", 17, "<"));
-			
-			Float returnRate = hostOdds*drawOdds*guestOdds/(hostOdds*drawOdds+hostOdds*guestOdds+drawOdds*guestOdds);
-			
-			Float hostRate = returnRate/hostOdds;
-			Float drawRate = returnRate/drawOdds;
-			Float guestRate = returnRate/guestOdds;
-			
+
+			Float returnRate = hostOdds * drawOdds * guestOdds / (hostOdds * drawOdds + hostOdds * guestOdds + drawOdds * guestOdds);
+
+			Float hostRate = returnRate / hostOdds;
+			Float drawRate = returnRate / drawOdds;
+			Float guestRate = returnRate / guestOdds;
+
 			odds.setHostOdds(hostOdds);
 			odds.setDrawOdds(drawOdds);
 			odds.setGuestOdds(guestOdds);
@@ -49,75 +144,74 @@ public class GetUtil {
 			odds.setHostKelly(Float.valueOf(getText(oddsTr, 28, ">", 29, "<")));
 			odds.setDrawKelly(Float.valueOf(getText(oddsTr, 30, ">", 31, "<")));
 			odds.setGuestKelly(Float.valueOf(getText(oddsTr, 32, ">", 33, "<").trim()));
-			odds.setTime("0000-"+getText(oddsTr, 34, ">", 35, "<").replace("&nbsp; ", "")+":00");
-			
+			odds.setTime("0000-" + getText(oddsTr, 34, ">", 35, "<").replace("&nbsp; ", "") + ":00");
+
 			oddsList.add(odds);
 		}
 		return oddsList;
 	}
-	
+
 	/**
 	 * 获取某一博彩公司对某一场比赛所开的赔率的对应关系
 	 */
 	public List<OddsMap> getOddsMaps(String str) {
-		
+
 		List<OddsMap> oddsMaps = new ArrayList<OddsMap>();
-		
+
 		// 某一比赛的ID
 		Matcher mm = Pattern.compile("ScheduleID=\\d+").matcher(str);
 		mm.find();
 		String matchId = mm.group(0).substring(11);
-		
+
 		// 开始获取给该比赛赔率的对应关系
 		Matcher mmm = Pattern.compile("game=Array.*").matcher(str);
 		mmm.find();
 		String gameInfo = mmm.group(0);
-			
+
 		Matcher m = Pattern.compile("\"[^\\\"]+\"").matcher(gameInfo);
 		while (m.find()) {
-			
+
 			String game = m.group(0);
 			OddsMap oddsMap = new OddsMap();
-			
+
 			oddsMap.setId(Integer.valueOf(getText(game, 1, "|", 2, "|")));
 			oddsMap.setMatchId(Integer.valueOf(matchId));
 			oddsMap.setCompanyId(Integer.valueOf(getText(game, 1, "\"", 1, "|")));
-			
+
 			oddsMaps.add(oddsMap);
 		}
 
 		return oddsMaps;
 	}
-	
+
 	/**
 	 * 获取比赛信息
 	 */
 	public List<Match> getMaths(String str) {
-		
+
 		List<Match> matchs = new ArrayList<Match>();
-		
+
 		String pattern = "jh.*";
 		Pattern r = Pattern.compile(pattern);
 		Matcher m = r.matcher(str);
-		
+
 		while (m.find()) {
 			String matchInfos = m.group(0);
-			
+
 			int round = Integer.valueOf(getText(matchInfos, 1, "_", 2, "\""));
-			
+
 			String pattern1 = "\\[[^\\[\\]\"]+]";
 			Pattern r1 = Pattern.compile(pattern1);
 			Matcher m1 = r1.matcher(matchInfos);
-			
-			
+
 			while (m1.find()) {
 				String matchinfo = m1.group(0);
-				
+
 				Match match = new Match();
 				match.setId(Integer.valueOf(getText(matchinfo, 1, "[", 1, ",")));
 				match.setLeagueId(Integer.valueOf(getText(matchinfo, 1, ",", 2, ",")));
-				match.setTime(getText(matchinfo, 1, "'", 2, "'")+":00");
-				
+				match.setTime(getText(matchinfo, 1, "'", 2, "'") + ":00");
+
 				match.setHostId(Integer.valueOf(getText(matchinfo, 4, ",", 5, ",")));
 				match.setGuestId(Integer.valueOf(getText(matchinfo, 5, ",", 6, ",")));
 				match.setScoreAll(getText(matchinfo, 3, "'", 4, "'"));
@@ -127,40 +221,40 @@ public class GetUtil {
 				match.setRedHost(Integer.valueOf(getText(matchinfo, 18, ",", 19, ",")));
 				match.setRedGuest(Integer.valueOf(getText(matchinfo, 19, ",", 20, ",")));
 				match.setRound(round);
-				
+
 				matchs.add(match);
 			}
 		}
 
 		return matchs;
 	}
-	
+
 	/**
 	 * 获取博彩公司信息
 	 */
 	public List<Company> getCompanies(String str) {
-		
+
 		List<Company> companies = new ArrayList<Company>();
-		
+
 		String pattern = "\\[[^\\[\\]]+\\]";
 		Pattern r = Pattern.compile(pattern);
 		Matcher m = r.matcher(str);
 
 		while (m.find()) {
 			String companyInfo = m.group(0);
-			
+
 			Company company = new Company();
 			company.setId(Integer.valueOf(getText(companyInfo, 1, "[", 1, ",")));
 			company.setName(getText(companyInfo, 1, "'", 2, "'"));
-			
+
 			String type = getText(companyInfo, 2, ",", 1, "]");
-			company.setType(type.equals("1,0")?"主流公司":(type.equals("0,1")?"交易所":"非交易所"));
-			
+			company.setType(type.equals("1,0") ? "主流公司" : (type.equals("0,1") ? "交易所" : "非交易所"));
+
 			companies.add(company);
 		}
 		return companies;
 	}
-	
+
 	/**
 	 * 分离某一联赛中所有球队的信息
 	 */
@@ -263,8 +357,8 @@ public class GetUtil {
 			League league = new League();
 			league.setId(Integer.valueOf(temp.substring(0, getIndex(temp, 1, ","))));
 			league.setName(getText(temp, 1, ",", 2, ","));
-			league.setLeagueType(getText(temp, 2, ",", 3, ",").equals("1")?"联赛":"杯赛");
-			league.setHasSub(getText(temp, 3, ",", 4, ",").equals("0")?"无":"有");
+			league.setLeagueType(getText(temp, 2, ",", 3, ",").equals("1") ? "联赛" : "杯赛");
+			league.setHasSub(getText(temp, 3, ",", 4, ",").equals("0") ? "无" : "有");
 			league.setSeason(temp.substring(getIndex(temp, 4, ",") + 1));
 			league.setCountryId(Integer.valueOf(getText(str, 1, "[", 1, "]")) + 1);
 			leagues.add(league);

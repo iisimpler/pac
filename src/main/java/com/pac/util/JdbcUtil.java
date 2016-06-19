@@ -6,7 +6,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -49,7 +48,7 @@ public class JdbcUtil {
 		try {
 			List<OddsMap> oddsMaps = new ArrayList<OddsMap>();
 
-			String sql = "select * from oddsmap limit ?,?";
+			String sql = "select * from oddsmap ORDER BY id desc limit ?,?";
 
 			// 获取连接
 			Connection conn = cpds.getConnection();
@@ -122,9 +121,6 @@ public class JdbcUtil {
 					}
 					if (field.getType().toString().contains("String")) {
 						field.set(tt, rs.getString(temp2));
-					}
-					if (field.getType().toString().contains("Date")) {
-						field.set(tt, new Date(rs.getDate(temp2).getTime()));
 					}
 				}
 

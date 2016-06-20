@@ -7,15 +7,219 @@ import java.util.regex.Pattern;
 
 import us.codecraft.webmagic.Page;
 
+import com.google.gson.Gson;
 import com.pac.model.Company;
 import com.pac.model.Country;
+import com.pac.model.Handicap;
 import com.pac.model.League;
 import com.pac.model.Match;
 import com.pac.model.Odds;
 import com.pac.model.OddsMap;
+import com.pac.model.OverUnder;
 import com.pac.model.Team;
+import com.pac.model.X1x2;
 
 public class GetUtil {
+	/**
+	 * 获取走地欧赔
+	 */
+	public List<X1x2> getX1x2s(Page page) {
+		String str = page.getRawText();
+		String urlStr = page.getUrl().toString();
+		Integer matchId = 545;
+		Integer companyId = Integer.valueOf(urlStr.substring(getIndex(urlStr, 2, "=") + 1));
+		List<X1x2> x1x2s = new ArrayList<X1x2>();
+		
+		Matcher mYear = Pattern.compile("\\d+ 年").matcher(str);
+		String year = "";
+		if (mYear.find()) {
+			year = mYear.group().substring(0, 4);
+		}
+		
+		Matcher m = Pattern.compile("class=\"gts\">[\\w\\W]*?</table>").matcher(str);
+		m.find();
+		m.find();
+		if (m.find()) {
+
+			String handicapsInfos = m.group();
+			Matcher mhandicapsInfo = Pattern.compile("<tr [\\w\\W]*?</tr>").matcher(handicapsInfos);
+			mhandicapsInfo.find();
+			while (mhandicapsInfo.find()) {
+				
+				X1x2 x1x2 = new X1x2();
+				
+				String handicapsInfo = mhandicapsInfo.group();
+				Matcher mInfo = Pattern.compile("<td .*").matcher(handicapsInfo);
+				int temp = 0;
+				while (mInfo.find()) {
+					temp++;
+					String info = mInfo.group();
+					String content = getText(info, 1, ">", 2, "<");
+					switch (temp) {
+					case 1:
+						x1x2.setGameTime(content);
+						break;
+					case 2:
+						x1x2.setScore(content);
+						break;
+					case 3:
+						x1x2.setHostOdds(content.equals("")?null:Float.valueOf(content));
+						break;
+					case 4:
+						x1x2.setHandicap(content.contains("封")?"封":content);
+						break;
+					case 5:
+						x1x2.setGuestOdds(content.equals("")?null:Float.valueOf(content));
+						break;
+					case 6:
+						x1x2.setTime(year+"-"+getText(info, 1, ">", 3, "<").replace("<br />", " ")+":00");
+						break;
+					case 7:
+						x1x2.setState(content);
+						break;
+					}
+				}
+				x1x2.setMatchId(matchId);
+				x1x2.setCompanyId(companyId);
+				x1x2s.add(x1x2);
+			}
+		
+		}
+		System.out.println(new Gson().toJson(x1x2s));
+		return x1x2s;
+	}
+	
+	/**
+	 * 获取走地大小球盘
+	 */
+	public List<OverUnder> getOverUnders(Page page) {
+		String str = page.getRawText();
+		String urlStr = page.getUrl().toString();
+		Integer matchId = 545;
+		Integer companyId = Integer.valueOf(urlStr.substring(getIndex(urlStr, 2, "=") + 1));
+		List<OverUnder> overUnders = new ArrayList<OverUnder>();
+		
+		Matcher mYear = Pattern.compile("\\d+ 年").matcher(str);
+		String year = "";
+		if (mYear.find()) {
+			year = mYear.group().substring(0, 4);
+		}
+		
+		Matcher m = Pattern.compile("class=\"gts\">[\\w\\W]*?</table>").matcher(str);
+		m.find();
+		if (m.find()) {
+			String handicapsInfos = m.group();
+			Matcher mhandicapsInfo = Pattern.compile("<tr [\\w\\W]*?</tr>").matcher(handicapsInfos);
+			mhandicapsInfo.find();
+			while (mhandicapsInfo.find()) {
+				
+				OverUnder overUnder = new OverUnder();
+				
+				String handicapsInfo = mhandicapsInfo.group();
+				Matcher mInfo = Pattern.compile("<td .*").matcher(handicapsInfo);
+				int temp = 0;
+				while (mInfo.find()) {
+					temp++;
+					String info = mInfo.group();
+					String content = getText(info, 1, ">", 2, "<");
+					switch (temp) {
+					case 1:
+						overUnder.setGameTime(content);
+						break;
+					case 2:
+						overUnder.setScore(content);
+						break;
+					case 3:
+						overUnder.setHostOdds(content.equals("")?null:Float.valueOf(content));
+						break;
+					case 4:
+						overUnder.setHandicap(content.contains("封")?"封":content);
+						break;
+					case 5:
+						overUnder.setGuestOdds(content.equals("")?null:Float.valueOf(content));
+						break;
+					case 6:
+						overUnder.setTime(year+"-"+getText(info, 1, ">", 3, "<").replace("<br />", " ")+":00");
+						break;
+					case 7:
+						overUnder.setState(content);
+						break;
+					}
+				}
+				overUnder.setMatchId(matchId);
+				overUnder.setCompanyId(companyId);
+				overUnders.add(overUnder);
+			}
+		}
+		System.out.println(new Gson().toJson(overUnders));
+		return overUnders;
+	}
+	
+	/**
+	 * 获取走地让球盘
+	 */
+	public List<Handicap> getHandicaps(Page page) {
+		String str = page.getRawText();
+		String urlStr = page.getUrl().toString();
+		Integer matchId = 545;
+		Integer companyId = Integer.valueOf(urlStr.substring(getIndex(urlStr, 2, "=") + 1));
+		List<Handicap> handicaps = new ArrayList<Handicap>();
+		
+		Matcher mYear = Pattern.compile("\\d+ 年").matcher(str);
+		String year = "";
+		if (mYear.find()) {
+			year = mYear.group().substring(0, 4);
+		}
+		
+		Matcher m = Pattern.compile("class=\"gts\">[\\w\\W]*?</table>").matcher(str);
+		
+		if (m.find()) {
+			String handicapsInfos = m.group();
+			Matcher mhandicapsInfo = Pattern.compile("<tr [\\w\\W]*?</tr>").matcher(handicapsInfos);
+			mhandicapsInfo.find();
+			while (mhandicapsInfo.find()) {
+				
+				Handicap handicap = new Handicap();
+				
+				String handicapsInfo = mhandicapsInfo.group();
+				Matcher mInfo = Pattern.compile("<td .*").matcher(handicapsInfo);
+				int temp = 0;
+				while (mInfo.find()) {
+					temp++;
+					String info = mInfo.group();
+					String content = getText(info, 1, ">", 2, "<");
+					switch (temp) {
+					case 1:
+						handicap.setGameTime(content);
+						break;
+					case 2:
+						handicap.setScore(content);
+						break;
+					case 3:
+						handicap.setHostOdds(content.equals("")?null:Float.valueOf(content));
+						break;
+					case 4:
+						handicap.setHandicap(content.contains("封")?"封":content);
+						break;
+					case 5:
+						handicap.setGuestOdds(content.equals("")?null:Float.valueOf(content));
+						break;
+					case 6:
+						handicap.setTime(year+"-"+getText(info, 1, ">", 3, "<").replace("<br />", " ")+":00");
+						break;
+					case 7:
+						handicap.setState(content);
+						break;
+					}
+				}
+				handicap.setMatchId(matchId);
+				handicap.setCompanyId(companyId);
+				handicaps.add(handicap);
+			}
+		}
+		System.out.println(new Gson().toJson(handicaps));
+		return handicaps;
+	}
 
 	/**
 	 * 从手机版网页获取赔率
@@ -25,8 +229,8 @@ public class GetUtil {
 		String str = page.getRawText();
 
 		String urlStr = page.getUrl().toString();
-		Integer matchId = Integer.valueOf(GetUtil.getText(urlStr, 1, "=", 1, "&"));
-		Integer companyId = Integer.valueOf(urlStr.substring(GetUtil.getIndex(urlStr, 2, "=") + 1));
+		Integer matchId = Integer.valueOf(getText(urlStr, 1, "=", 1, "&"));
+		Integer companyId = Integer.valueOf(urlStr.substring(getIndex(urlStr, 2, "=") + 1));
 
 		Matcher yearInfoMatch = Pattern.compile("\"gray\">\\d+").matcher(str);
 		Matcher oddsInfosMatch = Pattern.compile("<table style=\"width:100%;\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" class=\"mytable3\">[\\w\\W]*?</table>").matcher(str);

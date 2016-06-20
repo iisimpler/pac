@@ -6,12 +6,15 @@ import java.util.Map;
 
 import com.pac.model.Company;
 import com.pac.model.Country;
+import com.pac.model.Handicap;
 import com.pac.model.League;
 import com.pac.model.Match;
 import com.pac.model.Odds;
 import com.pac.model.OddsMap;
+import com.pac.model.OverUnder;
 import com.pac.model.PageUrl;
 import com.pac.model.Team;
+import com.pac.model.X1x2;
 
 public class ServiceUtil {
 	
@@ -33,7 +36,15 @@ public class ServiceUtil {
 			return JdbcUtil.insert(team);
 		}
 	}
-	
+	public static int updateX1x2(X1x2 x1x2) {
+		return JdbcUtil.insert(x1x2);
+	}
+	public static int updateOverUnder(OverUnder overUnder) {
+		return JdbcUtil.insert(overUnder);
+	}
+	public static int updateHandicap(Handicap handicap) {
+		return JdbcUtil.insert(handicap);
+	}
 	public static int updateCountry(Country country) {
 		return JdbcUtil.insert(country);
 	}

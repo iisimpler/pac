@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.pac.model.Match;
 import com.pac.model.OddsMap;
 
 public class JdbcUtil {
@@ -43,6 +44,28 @@ public class JdbcUtil {
 			e.printStackTrace();
 		}
 	}
+	public static List<Match> getMatchsForZoudi() {
+		
+		try {
+			List<Match> matchs = new ArrayList<Match>();
+			
+			String sql = "SELECT * FROM `match` where leagueId in (36,4,2,31,11) and time>'2013-08-01 00:00:00'";
+			
+			// 获取连接
+			Connection conn = cpds.getConnection();
+			PreparedStatement pstmt = conn.prepareStatement(sql.toString());
+			ResultSet rs = pstmt.executeQuery();
+			while (rs.next()) {
+				Match match = new Match();
+				match.setId(rs.getInt("id"));
+				matchs.add(match);
+			}
+			return matchs;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 
 	//五大联赛 Eurobet 伟德 立博 威廉希尔 bet365 Oddset SB
 	public static List<OddsMap> getOddsMaps5League() {
@@ -50,7 +73,7 @@ public class JdbcUtil {
 
 			List<OddsMap> oddsMaps = new ArrayList<OddsMap>();
 
-			String sql = "SELECT * FROM `oddsmap` where matchId in (SELECT id FROM `match` where leagueId in (36,4,2,31,11)) and companyId in (71,81,82,115,281,370,545)";
+			String sql = "SELECT * FROM `oddsmap` where matchId in (SELECT id FROM `match` where leagueId in (36,4,2,31,11)) and companyId in (71,81,82,115,281,370,545) order by id desc";
 
 			// 获取连接
 			Connection conn = cpds.getConnection();

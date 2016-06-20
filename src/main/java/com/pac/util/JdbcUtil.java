@@ -15,6 +15,7 @@ import java.util.Properties;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import com.pac.model.Match;
 import com.pac.model.OddsMap;
+import com.pac.model.PageUrl;
 
 public class JdbcUtil {
 
@@ -43,6 +44,30 @@ public class JdbcUtil {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	public static List<PageUrl> getPageUrlForNotOK() {
+		
+		try {
+			List<PageUrl> pageUrls = new ArrayList<PageUrl>();
+			
+			String sql = "select * from pageurl where `status`<>'OK'";
+			
+			// 获取连接
+			Connection conn = cpds.getConnection();
+			PreparedStatement pstmt = conn.prepareStatement(sql.toString());
+			ResultSet rs = pstmt.executeQuery();
+			while (rs.next()) {
+				PageUrl pageUrl = new PageUrl();
+				pageUrl.setId(rs.getInt("id"));
+				pageUrl.setName(rs.getString("name"));
+				pageUrl.setStatus(rs.getString("status"));
+				pageUrls.add(pageUrl);
+			}
+			return pageUrls;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 	public static List<Match> getMatchsForZoudi() {
 		

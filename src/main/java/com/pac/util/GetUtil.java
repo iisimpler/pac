@@ -7,9 +7,9 @@ import java.util.regex.Pattern;
 
 import us.codecraft.webmagic.Page;
 
-import com.google.gson.Gson;
 import com.pac.model.Company;
 import com.pac.model.Country;
+import com.pac.model.Event;
 import com.pac.model.Handicap;
 import com.pac.model.League;
 import com.pac.model.Match;
@@ -20,6 +20,85 @@ import com.pac.model.Team;
 import com.pac.model.X1x2;
 
 public class GetUtil {
+	
+	/**
+	 * 获取走地事件
+	 */
+	public List<Event> getEvents(Page page) {
+		
+		List<Event> events = new ArrayList<Event>();
+		
+		String str = page.getRawText();
+		String urlStr = page.getUrl().toString();
+		Integer matchId = Integer.valueOf(urlStr.substring(getIndex(urlStr, 1, "=")+1));
+		
+		Matcher mEventsInfos = Pattern.compile("比赛事件[\\w\\W]*?</table>").matcher(str);
+		
+		if (mEventsInfos.find()) {
+			String eventsInfos = mEventsInfos.group();
+			Matcher mEventsInfo = Pattern.compile("<tr>[\\w\\W]*?</tr>").matcher(eventsInfos);
+			while(mEventsInfo.find()) {
+				String eventsInfo = mEventsInfo.group();
+				Matcher mEventInfo = Pattern.compile("<td[\\s\\S]*?</td>").matcher(eventsInfo);
+				
+				
+				Event event = new Event();
+				event.setMatchId(matchId);
+
+				if (eventsInfo.contains("img")) {
+					if (eventsInfo.contains("jinqiu")) {
+						event.setDescription("进球");
+					}
+					if (eventsInfo.contains("dianqiu")) {
+						event.setDescription("点球");
+					}
+					if (eventsInfo.contains("wulong")) {
+						event.setDescription("乌龙球");
+					}
+					if (eventsInfo.contains("ycard")) {
+						event.setDescription("黄牌");
+					}
+					if (eventsInfo.contains("4@2x")) {
+						event.setDescription("两黄变红");
+					}
+					if (eventsInfo.contains("rcard")) {
+						event.setDescription("红牌");
+					}
+					if (eventsInfo.contains("r_hu")) {
+						event.setDescription("红牌");
+					}
+				}
+				int temp = 0;
+				while(mEventInfo.find()) {
+					temp++;
+					String eventStr = mEventInfo.group();
+					String content = getText(eventStr, 1, ">", 2, "<");
+					
+					if (temp==2) {
+						event.setGameTime(Integer.valueOf(content));
+					}
+					if (temp==1) {
+						if (eventStr.contains("img")) {
+							event.setTeamType("host");
+						}
+					}
+					if (temp==3) {
+						if (eventStr.contains("img")) {
+							event.setTeamType("guest");
+						}
+					}
+				}
+				events.add(event);
+			}
+			
+		}
+		if (events.size()>0) {
+			events.remove(events.size()-1);
+		}
+		return events;
+	}
+	
+	
 	/**
 	 * 获取走地欧赔
 	 */
@@ -85,7 +164,6 @@ public class GetUtil {
 			}
 		
 		}
-		System.out.println(new Gson().toJson(x1x2s));
 		return x1x2s;
 	}
 	
@@ -151,7 +229,6 @@ public class GetUtil {
 				overUnders.add(overUnder);
 			}
 		}
-		System.out.println(new Gson().toJson(overUnders));
 		return overUnders;
 	}
 	
@@ -217,7 +294,6 @@ public class GetUtil {
 				handicaps.add(handicap);
 			}
 		}
-		System.out.println(new Gson().toJson(handicaps));
 		return handicaps;
 	}
 

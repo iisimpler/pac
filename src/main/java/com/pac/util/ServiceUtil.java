@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.pac.model.Company;
 import com.pac.model.Country;
+import com.pac.model.Event;
 import com.pac.model.Handicap;
 import com.pac.model.League;
 import com.pac.model.Match;
@@ -18,6 +19,9 @@ import com.pac.model.X1x2;
 
 public class ServiceUtil {
 	
+	public static int updateEvent(Event event) {
+		return JdbcUtil.insert(event);
+	}
 	public static int updateOdds(Odds odds) {
 		return JdbcUtil.insert(odds);
 	}
